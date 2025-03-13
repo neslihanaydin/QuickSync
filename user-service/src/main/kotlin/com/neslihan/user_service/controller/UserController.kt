@@ -6,6 +6,7 @@ import com.neslihan.user_service.service.UserService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.Authentication
+import org.springframework.security.oauth2.core.oidc.user.OidcUser
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -45,12 +46,18 @@ class UserController(
 
     @GetMapping("/profile")
     fun getProfile(authentication: Authentication): ResponseEntity<Map<String, Any>> {
-        val user = authentication.principal as User
-        return ResponseEntity.ok(
-            mapOf(
-                "username" to user.username,
-                "email" to user.email
+        val principal = authentication.principal
+        val profile = when (principal) {
+            is User -> mapOf(
+                "username" to principal.username,
+                "email" to principal.email
             )
-        )
+            is OidcUser -> mapOf(
+                "username" to principal.getAttribute<String>("email").toString(),
+                "email" to principal.getAttribute<String>("email").toString()
+            )
+            else -> mapOf("error" to "Invalid token.")
+        }
+        return ResponseEntity.ok(profile)
     }
 }

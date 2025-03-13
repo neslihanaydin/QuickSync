@@ -1,2 +1,3 @@
 .DS_Store
 /chat-service/.vscode
+user-service/.env
