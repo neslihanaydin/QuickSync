@@ -1,8 +1,9 @@
 package com.neslihan.user_service.controller
 
+import com.neslihan.user_service.dto.*
 import com.neslihan.user_service.model.User
-import com.neslihan.user_service.security.JwtTokenProvider
 import com.neslihan.user_service.service.UserService
+import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.Authentication
@@ -16,48 +17,35 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/users")
 class UserController(
-    private val userService: UserService,
-    private val jwtTokenProvider: JwtTokenProvider
+    private val userService: UserService
 ) {
-    data class LoginRequest(val username: String, val password: String)
-    data class LoginResponse(val token: String)
 
     @PostMapping("/register")
-    fun register(@RequestBody user: User): ResponseEntity<Any> {
-        val existingUser = userService.findByUsername(user.username)
-        if (existingUser != null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Username already exists.")
-        }
-        val savedUser = userService.registerUser(user)
-        return login(LoginRequest(user.username, user.password))
+    fun register(@RequestBody @Valid registerRequest: RegisterRequest): ResponseEntity<Any> {
+        val authResponse = userService.register(registerRequest)
+        return ResponseEntity.status(HttpStatus.CREATED).body(authResponse)
     }
 
     @PostMapping("/login")
-    fun login(@RequestBody loginRequest: LoginRequest): ResponseEntity<Any> {
-        val user = userService.findByUsername(loginRequest.username)
-        return if (user != null && userService.validatePassword(loginRequest.password, user.password)) {
-            val token = jwtTokenProvider.generateToken(user)
-            ResponseEntity
-                .ok(LoginResponse(token))
-        } else {
-            ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials.")
-        }
+    fun login(@RequestBody @Valid loginRequest: LoginRequest): ResponseEntity<Any> {
+        val authResponse = userService.login(loginRequest)
+        return ResponseEntity.ok(authResponse)
     }
 
     @GetMapping("/profile")
-    fun getProfile(authentication: Authentication): ResponseEntity<Map<String, Any>> {
+    fun getProfile(authentication: Authentication): ResponseEntity<ProfileResponse> {
         val principal = authentication.principal
-        val profile = when (principal) {
-            is User -> mapOf(
-                "username" to principal.username,
-                "email" to principal.email
+        val profileResponse = when (principal) {
+            is User -> ProfileResponse(
+                username = principal.username,
+                email = principal.email
             )
-            is OidcUser -> mapOf(
-                "username" to principal.getAttribute<String>("email").toString(),
-                "email" to principal.getAttribute<String>("email").toString()
+            is OidcUser -> ProfileResponse(
+                username = principal.getAttribute<String>("email").toString(),
+                email = principal.getAttribute<String>("email").toString()
             )
-            else -> mapOf("error" to "Invalid token.")
+            else -> throw IllegalArgumentException("Invalid token.")
         }
-        return ResponseEntity.ok(profile)
+        return ResponseEntity.ok(profileResponse)
     }
 }

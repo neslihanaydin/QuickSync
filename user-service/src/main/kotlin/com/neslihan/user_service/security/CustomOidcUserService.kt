@@ -1,9 +1,7 @@
 package com.neslihan.user_service.security
 
-import com.neslihan.user_service.model.User
-import com.neslihan.user_service.repository.UserRepository
+import com.neslihan.user_service.dto.RegisterRequest
 import com.neslihan.user_service.service.UserService
-import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService
@@ -25,14 +23,14 @@ class CustomOidcUserService(
         val email = oidcUser.getAttribute<String>("email")
             ?: throw OAuth2AuthenticationException(OAuth2Error("email_not_found"), "Email not found in OIDC response")
 
-        var user = userService.findByEmail(email)
-        if (user == null) {
-            user = User(
+        if (userService.findByEmail(email) == null) {
+            val registerRequest =
+            RegisterRequest(
                 username = email,
                 email = email,
                 password = UUID.randomUUID().toString() // unusable password
             )
-            user = userService.registerUser(user)
+            val savedUser = userService.register(registerRequest)
         }
         return oidcUser
     }
