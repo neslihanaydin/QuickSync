@@ -15,7 +15,27 @@ const Login = () => {
   useEffect(() => {
     setUser(null);
     sessionStorage.removeItem('token');
-  }, [setUser]);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    console.log('tokenn', token);
+    if (token) {
+      sessionStorage.setItem('token', token);
+      window.history.replaceState({}, document.title, window.location.pathname);
+      axios.get(`${BASE_URL}/users/profile`, {
+        headers: { Authorization: `Bearer ${token}`},
+      })
+      .then((meResponse) => {
+        setUser(meResponse.data);
+        navigate('/chat');
+      })
+      .catch(() => {
+        alert('Failed to load profile');
+      });
+    }
+
+
+  }, [setUser, navigate, BASE_URL]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -43,6 +63,10 @@ const Login = () => {
     }
   };
 
+  const handleGoogleLogin = () => {
+    window.location.href = `${BASE_URL}/users/oauth2/authorization/google`;
+  };
+
   return (
     <div className="login-container">
       <div className="login-card">
@@ -66,6 +90,10 @@ const Login = () => {
           />
           <button type="submit" className="login-button">Continue</button>
         </form>
+        <hr />
+        <button onClick={handleGoogleLogin} className="login-button google">
+          Login with Google
+        </button>
         <div className="login-footer">
           <p>
             Don't have an account? <Link to="/register">Sign up</Link>
