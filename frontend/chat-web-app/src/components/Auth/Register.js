@@ -28,11 +28,8 @@ const Register = () => {
 
       console.log("Registration successful:", response.data);
 
-      const token = response.data.token;
-      sessionStorage.setItem('token', token);
-
       const meResponse = await axios.get(`${BASE_URL}/users/profile`, {
-        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true
       });
       setUser(meResponse.data);
 

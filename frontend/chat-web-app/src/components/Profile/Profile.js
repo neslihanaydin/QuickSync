@@ -5,17 +5,31 @@ import { Button } from "@mui/material";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 
 import '../../style/Profile.css';
+import axios from "axios";
 
 const Profile = () => {
   const { user, setUser } = useContext(UserContext);
   const navigate = useNavigate();
 
-  const handleSignOut = () => {
-    sessionStorage.removeItem("token");
-    setUser(null);
-    navigate("/login");
-  };
+  const BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
+  const handleSignOut = async () => {
+    try {
+      await axios.post(
+        `${BASE_URL}/users/logout`,
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+      setUser(null);
+      navigate("/login");
+
+    } catch (error) {
+      console.error("Sign out failed:", error);
+      alert("Sign out failed");
+    }
+  };
   return (
     <div>
       <div className="profile-container">

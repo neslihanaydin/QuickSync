@@ -18,59 +18,39 @@ class UserService(
     private val jwtTokenProvider: JwtTokenProvider
 ) {
     fun registerOAuth2User(request: RegisterRequest): String {
-        val existingUser = findByUsername(request.username)
-        if (existingUser != null) {
-            throw IllegalArgumentException("Username already exists.")
-        }
-
-        val user = User(
-            username = request.username,
-            email = request.email,
-            password = passwordEncoder.encode(request.password)
-        )
-
+        ensureUsernameAvailable(request.username)
+        val user = createUser(request)
         val savedUser = userRepository.save(user)
-
-        val token = jwtTokenProvider.generateToken(savedUser)
-
-        return token
+        return jwtTokenProvider.generateToken(savedUser)
     }
 
-    fun register(request: RegisterRequest): AuthResponse {
-        val existingUser = findByUsername(request.username)
-        if (existingUser != null) {
-            throw IllegalArgumentException("Username already exists.")
-        }
-
-        val user = User(
-            username = request.username,
-            email = request.email,
-            password = passwordEncoder.encode(request.password)
-        )
-
+    fun register(request: RegisterRequest, response: HttpServletResponse): AuthResponse {
+        ensureUsernameAvailable(request.username)
+        val user = createUser(request)
         val savedUser = userRepository.save(user)
-
         val token = jwtTokenProvider.generateToken(savedUser)
-
+        println("token: $token")
+        response.addCookie(generateTokenCookie(token))
+        println("response: $response")
         return AuthResponse(token)
     }
 
     fun login(request: LoginRequest, response: HttpServletResponse): AuthResponse {
         val user = findByUsername(request.username)
-        return if (user != null && validatePassword(request.password, user.password)) {
-            val token = jwtTokenProvider.generateToken(user)
+            ?: throw IllegalArgumentException("User not found.")
+        if (!validatePassword(request.password, user.password)) {
+            throw IllegalArgumentException("Invalid password.")
+        }
+        val token = jwtTokenProvider.generateToken(user)
+        response.addCookie(generateTokenCookie(token))
+        return AuthResponse(token)
+    }
 
-            // token as cookie
-            val tokenCookie = Cookie("token", token)
-            tokenCookie.isHttpOnly = true
-            tokenCookie.path = "/"
-            tokenCookie.maxAge = 3600
-            response.addCookie(tokenCookie)
-
-            AuthResponse(token)
-
-        } else {
-            throw IllegalArgumentException("Invalid credentials.")
+    fun logout(): Cookie{
+        return Cookie("token", "").apply {
+            isHttpOnly = true
+            path = "/"
+            maxAge = 0
         }
     }
 
@@ -79,4 +59,26 @@ class UserService(
     fun findByEmail(email: String): User? = userRepository.findByEmail(email)
 
     fun validatePassword(rawPassword: String, hashedPassword: String): Boolean = passwordEncoder.matches(rawPassword, hashedPassword)
+
+    private fun ensureUsernameAvailable(username: String) {
+        if (findByUsername(username) != null) {
+            throw IllegalArgumentException("Username already exists.")
+        }
+    }
+
+    private fun createUser(request: RegisterRequest): User {
+        return User(
+            username = request.username,
+            email = request.email,
+            password = passwordEncoder.encode(request.password)
+        )
+    }
+
+    private fun generateTokenCookie(token: String): Cookie {
+        return Cookie("token", token).apply {
+            isHttpOnly = true
+            path = "/"
+            maxAge = 3600
+        }
+    }
 }

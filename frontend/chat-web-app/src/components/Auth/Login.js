@@ -14,27 +14,16 @@ const Login = () => {
 
   useEffect(() => {
     setUser(null);
-    sessionStorage.removeItem('token');
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    if (token) {
-      sessionStorage.setItem('token', token);
-      window.history.replaceState({}, document.title, window.location.pathname);
-      axios.get(`${BASE_URL}/users/profile`, {
-        headers: { Authorization: `Bearer ${token}`},
-        withCredentials: true
-      })
-      .then((meResponse) => {
-        setUser(meResponse.data);
-        navigate('/chat');
-      })
-      .catch(() => {
-        alert('Failed to load profile');
-      });
-    }
-
-
+     axios.get(`${BASE_URL}/users/profile`, {
+      withCredentials: true,
+     })
+     .then((meResponse) => {
+       setUser(meResponse.data);
+       navigate('/chat');
+     })
+     .catch(() => {
+       console.log('Not logged in');
+     });
   }, [setUser, navigate, BASE_URL]);
 
   const handleLogin = async (e) => {
@@ -48,11 +37,7 @@ const Login = () => {
           withCredentials: true,
         }
       );
-
-      const token = response.data.token;
-      sessionStorage.setItem('token', token);
       const meResponse = await axios.get(`${BASE_URL}/users/profile`, {
-        headers: { Authorization: `Bearer ${token}` },
         withCredentials: true
       });
       setUser(meResponse.data);
