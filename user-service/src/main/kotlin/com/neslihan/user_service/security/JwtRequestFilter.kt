@@ -21,9 +21,22 @@ class JwtRequestFilter(
         filterChain: FilterChain
     ) {
          try {
+             var jwt: String? = null
              val authHeader = request.getHeader("Authorization")
              if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                 val jwt = authHeader.substring(7)
+                 jwt = authHeader.substring(7)
+             } else {
+                 val cookies = request.cookies
+                 if (cookies != null) {
+                     for (cookie in cookies) {
+                         if (cookie.name == "token") {
+                             jwt = cookie.value
+                             break
+                         }
+                     }
+                 }
+             }
+             if (jwt != null) {
                  val username = jwtTokenValidator.extractUsername(jwt)
                  if (username != null && SecurityContextHolder.getContext().authentication == null) {
                      val user = userService.findByUsername(username)
@@ -34,6 +47,7 @@ class JwtRequestFilter(
                      }
                  }
              }
+
          } catch (e: Exception) {
              logger.error("JWT Authentication failed: ${e.message}")
          }

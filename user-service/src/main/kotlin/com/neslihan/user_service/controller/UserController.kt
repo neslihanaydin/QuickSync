@@ -3,6 +3,7 @@ package com.neslihan.user_service.controller
 import com.neslihan.user_service.dto.*
 import com.neslihan.user_service.model.User
 import com.neslihan.user_service.service.UserService
+import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -27,8 +28,8 @@ class UserController(
     }
 
     @PostMapping("/login")
-    fun login(@RequestBody @Valid loginRequest: LoginRequest): ResponseEntity<Any> {
-        val authResponse = userService.login(loginRequest)
+    fun login(@RequestBody @Valid loginRequest: LoginRequest, response: HttpServletResponse): ResponseEntity<Any> {
+        val authResponse = userService.login(loginRequest, response)
         return ResponseEntity.ok(authResponse)
     }
 

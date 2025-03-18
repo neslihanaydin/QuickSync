@@ -37,22 +37,27 @@ class SecurityConfig(
             .authorizeHttpRequests { auth ->
                 auth
                     .requestMatchers(HttpMethod.POST, "/users/register", "/users/login", "/users/oauth2/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/users/oauth2/**").permitAll()
                     .requestMatchers("/", "/public/**", "/error/**").permitAll()
                     .anyRequest().authenticated()
             }
             .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter::class.java)
             .oauth2Login { oauth2 ->
                 oauth2
+                    .authorizationEndpoint { endpoint ->
+                        endpoint.baseUri("/users/oauth2/authorization")
+                    }
                     .successHandler { request, response, authentication ->
                         val user = authentication.principal as OAuth2User
 
                         val userEmail = user.attributes["email"] as String
                         var dbUser = userService.findByEmail(userEmail)
-                        val parsedEmail = userEmail.substring(0, userEmail.indexOf('@')) // parse email
-                        val randomSuffixtoEmail = UUID.randomUUID().toString().substring(0, 3)
-                        val username = "$parsedEmail$randomSuffixtoEmail"
+
                         var token = ""
                         if (dbUser == null) {
+                            val parsedEmail = userEmail.substring(0, userEmail.indexOf('@')) // parse email
+                            val randomSuffixtoEmail = UUID.randomUUID().toString().substring(0, 3)
+                            val username = "$parsedEmail$randomSuffixtoEmail"
                             logger.debug("User not found, creating new user inside successHandler...")
                             logger.debug("User name: $username")
                             val registerRequest =
@@ -67,8 +72,15 @@ class SecurityConfig(
                         }
 
                         logger.debug("Token: $token")
-                        response.sendRedirect("http://localhost:3000/?token=$token")
 
+                        // token as cookie
+                        val tokenCookie = Cookie("token", token)
+                        tokenCookie.isHttpOnly = true
+                        tokenCookie.path = "/"
+                        tokenCookie.maxAge = 3600
+                        response.addCookie(tokenCookie)
+
+                        response.sendRedirect("http://localhost:3000/?token=$token")
                     }
 
             }

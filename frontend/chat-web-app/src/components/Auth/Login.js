@@ -18,12 +18,12 @@ const Login = () => {
 
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
-    console.log('tokenn', token);
     if (token) {
       sessionStorage.setItem('token', token);
       window.history.replaceState({}, document.title, window.location.pathname);
       axios.get(`${BASE_URL}/users/profile`, {
         headers: { Authorization: `Bearer ${token}`},
+        withCredentials: true
       })
       .then((meResponse) => {
         setUser(meResponse.data);
@@ -51,9 +51,9 @@ const Login = () => {
 
       const token = response.data.token;
       sessionStorage.setItem('token', token);
-
       const meResponse = await axios.get(`${BASE_URL}/users/profile`, {
         headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true
       });
       setUser(meResponse.data);
 
