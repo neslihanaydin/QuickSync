@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController
 class UserController(
     private val userService: UserService
 ) {
-
+    val logger = org.slf4j.LoggerFactory.getLogger(UserController::class.java)
     @PostMapping("/register")
     fun register(@RequestBody @Valid registerRequest: RegisterRequest): ResponseEntity<Any> {
         val authResponse = userService.register(registerRequest)
@@ -35,17 +35,20 @@ class UserController(
     @GetMapping("/profile")
     fun getProfile(authentication: Authentication): ResponseEntity<ProfileResponse> {
         val principal = authentication.principal
+        logger.debug("Principal: $principal")
         val profileResponse = when (principal) {
             is User -> ProfileResponse(
                 username = principal.username,
                 email = principal.email
             )
-            is OidcUser -> ProfileResponse(
+            is OidcUser ->
+                ProfileResponse(
                 username = principal.getAttribute<String>("email").toString(),
                 email = principal.getAttribute<String>("email").toString()
             )
             else -> throw IllegalArgumentException("Invalid token.")
         }
+        logger.debug("Profile response: $profileResponse")
         return ResponseEntity.ok(profileResponse)
     }
 }

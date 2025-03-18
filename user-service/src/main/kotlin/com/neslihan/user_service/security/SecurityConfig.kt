@@ -1,60 +1,76 @@
 package com.neslihan.user_service.security
 
+import com.neslihan.user_service.dto.RegisterRequest
+import com.neslihan.user_service.service.UserService
 import jakarta.servlet.http.Cookie
+import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
-import org.springframework.security.config.annotation.web.configurers.CorsConfigurer
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.oauth2.core.user.OAuth2User
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import java.util.*
 
 
 @Configuration
 @EnableWebSecurity
 class SecurityConfig(
     private val jwtRequestFilter: JwtRequestFilter,
-    private val customOidcUserService: CustomOidcUserService,
-    private val jwtTokenProvider: JwtTokenProvider
+    private val jwtTokenProvider: JwtTokenProvider,
+    private val userService: UserService
 ) {
+
+    val logger = LoggerFactory.getLogger(SecurityConfig::class.java)
     @Bean
     fun securityFilterChain(httpSecurity: HttpSecurity) : SecurityFilterChain {
         httpSecurity
             .csrf { csrf: CsrfConfigurer<HttpSecurity> -> csrf.disable() }
-            .cors { cors: CorsConfigurer<HttpSecurity> -> cors.disable() }
+            .cors { }
             .sessionManagement { session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             }
             .authorizeHttpRequests { auth ->
                 auth
-                    .requestMatchers(HttpMethod.POST, "/users/register", "/users/login").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/users/register", "/users/login", "/users/oauth2/**").permitAll()
                     .requestMatchers("/", "/public/**", "/error/**").permitAll()
                     .anyRequest().authenticated()
             }
             .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter::class.java)
             .oauth2Login { oauth2 ->
                 oauth2
-                    .userInfoEndpoint { info ->
-                        info.oidcUserService(customOidcUserService)
-                    }
                     .successHandler { request, response, authentication ->
                         val user = authentication.principal as OAuth2User
-                        val token = jwtTokenProvider.generateTokenFromOAuth(user)
 
-                        // Create a cookie with the token
-                        val cookie = Cookie("jwtToken", token).apply {
-                            path = "/"
-                            isHttpOnly = true
-                            secure = false
-                            maxAge = 3600
+                        val userEmail = user.attributes["email"] as String
+                        var dbUser = userService.findByEmail(userEmail)
+                        val parsedEmail = userEmail.substring(0, userEmail.indexOf('@')) // parse email
+                        val randomSuffixtoEmail = UUID.randomUUID().toString().substring(0, 3)
+                        val username = "$parsedEmail$randomSuffixtoEmail"
+                        var token = ""
+                        if (dbUser == null) {
+                            logger.debug("User not found, creating new user inside successHandler...")
+                            logger.debug("User name: $username")
+                            val registerRequest =
+                                RegisterRequest(
+                                    username = username,
+                                    email = userEmail,
+                                    password = UUID.randomUUID().toString() // unusable password
+                                )
+                            token = userService.registerOAuth2User(registerRequest)
+                        } else {
+                            token = jwtTokenProvider.generateToken(dbUser)
                         }
-                        //response.addCookie(cookie)
+
+                        logger.debug("Token: $token")
                         response.sendRedirect("http://localhost:3000/?token=$token")
+
                     }
+
             }
         return httpSecurity.build()
     }

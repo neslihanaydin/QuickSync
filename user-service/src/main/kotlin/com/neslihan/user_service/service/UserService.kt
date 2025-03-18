@@ -15,6 +15,24 @@ class UserService(
     private val userRepository: UserRepository,
     private val jwtTokenProvider: JwtTokenProvider
 ) {
+    fun registerOAuth2User(request: RegisterRequest): String {
+        val existingUser = findByUsername(request.username)
+        if (existingUser != null) {
+            throw IllegalArgumentException("Username already exists.")
+        }
+
+        val user = User(
+            username = request.username,
+            email = request.email,
+            password = passwordEncoder.encode(request.password)
+        )
+
+        val savedUser = userRepository.save(user)
+
+        val token = jwtTokenProvider.generateToken(savedUser)
+
+        return token
+    }
 
     fun register(request: RegisterRequest): AuthResponse {
         val existingUser = findByUsername(request.username)
@@ -41,7 +59,7 @@ class UserService(
             val token = jwtTokenProvider.generateToken(user)
             AuthResponse(token)
         } else {
-            throw java.lang.IllegalArgumentException("Invalid credentials.")
+            throw IllegalArgumentException("Invalid credentials.")
         }
     }
 
