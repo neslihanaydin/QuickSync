@@ -1,6 +1,5 @@
 package com.neslihan.user_service.service
 
-import com.neslihan.user_service.dto.AuthResponse
 import com.neslihan.user_service.dto.LoginRequest
 import com.neslihan.user_service.dto.RegisterRequest
 import com.neslihan.user_service.model.User
@@ -10,6 +9,7 @@ import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import java.util.*
 
 @Service
 class UserService(
@@ -24,7 +24,7 @@ class UserService(
         return jwtTokenProvider.generateToken(savedUser)
     }
 
-    fun register(request: RegisterRequest, response: HttpServletResponse): AuthResponse {
+    fun register(request: RegisterRequest, response: HttpServletResponse) {
         ensureUsernameAvailable(request.username)
         val user = createUser(request)
         val savedUser = userRepository.save(user)
@@ -32,10 +32,9 @@ class UserService(
         println("token: $token")
         response.addCookie(generateTokenCookie(token))
         println("response: $response")
-        return AuthResponse(token)
     }
 
-    fun login(request: LoginRequest, response: HttpServletResponse): AuthResponse {
+    fun login(request: LoginRequest, response: HttpServletResponse) {
         val user = findByUsername(request.username)
             ?: throw IllegalArgumentException("User not found.")
         if (!validatePassword(request.password, user.password)) {
@@ -43,7 +42,6 @@ class UserService(
         }
         val token = jwtTokenProvider.generateToken(user)
         response.addCookie(generateTokenCookie(token))
-        return AuthResponse(token)
     }
 
     fun logout(): Cookie{
@@ -74,11 +72,17 @@ class UserService(
         )
     }
 
-    private fun generateTokenCookie(token: String): Cookie {
+    fun generateTokenCookie(token: String): Cookie {
         return Cookie("token", token).apply {
             isHttpOnly = true
             path = "/"
             maxAge = 3600
         }
+    }
+
+    fun generateUsername(email: String): String {
+        val parsedEmail = email.substring(0, email.indexOf('@')) // parse email
+        val randomEmailSuffix = UUID.randomUUID().toString().substring(0, 3)
+        return "$parsedEmail$randomEmailSuffix"
     }
 }

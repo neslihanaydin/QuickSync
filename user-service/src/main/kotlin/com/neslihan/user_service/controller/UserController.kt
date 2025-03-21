@@ -23,14 +23,14 @@ class UserController(
     val logger = org.slf4j.LoggerFactory.getLogger(UserController::class.java)
     @PostMapping("/register")
     fun register(@RequestBody @Valid registerRequest: RegisterRequest, response: HttpServletResponse): ResponseEntity<Any> {
-        val authResponse = userService.register(registerRequest, response)
-        return ResponseEntity.status(HttpStatus.CREATED).body(authResponse)
+        userService.register(registerRequest, response)
+        return ResponseEntity.status(HttpStatus.CREATED).build()
     }
 
     @PostMapping("/login")
     fun login(@RequestBody @Valid loginRequest: LoginRequest, response: HttpServletResponse): ResponseEntity<Any> {
-        val authResponse = userService.login(loginRequest, response)
-        return ResponseEntity.ok(authResponse)
+        userService.login(loginRequest, response)
+        return ResponseEntity.ok().build()
     }
 
     @PostMapping("/logout")
