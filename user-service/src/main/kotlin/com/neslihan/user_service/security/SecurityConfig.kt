@@ -1,6 +1,7 @@
 package com.neslihan.user_service.security
 
 import com.neslihan.user_service.dto.RegisterRequest
+import com.neslihan.user_service.dto.TokenCookieResponse
 import com.neslihan.user_service.service.UserService
 import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletRequest
@@ -40,7 +41,7 @@ class SecurityConfig(
             .authorizeHttpRequests { auth ->
                 auth
                     .requestMatchers(HttpMethod.POST, "/users/register", "/users/login", "/users/oauth2/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/users/oauth2/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/users/oauth2/**", "/users/profile").permitAll()
                     .requestMatchers("/", "/public/**", "/error/**").permitAll()
                     .anyRequest().authenticated()
             }
@@ -67,10 +68,10 @@ class SecurityConfig(
             ?: throw IllegalArgumentException("OAuth2User expected")
         val userEmail = oAuth2User.attributes["email"] as? String
             ?: throw IllegalArgumentException("Email not found in OAuth2User attributes")
-
-        val token: String = userService.findByEmail(userEmail)?.let { dbUser ->
-            jwtTokenProvider.generateToken(dbUser)
-        } ?: run {
+        
+        val tokenCookieResponse: TokenCookieResponse
+        val dbUser = userService.findByEmail(userEmail)
+        if (dbUser == null) {
             val username = userService.generateUsername(userEmail)
             logger.debug("User not found, creating new user. Username: $username")
             val registerRequest = RegisterRequest(
@@ -78,11 +79,17 @@ class SecurityConfig(
                 email = userEmail,
                 password = UUID.randomUUID().toString() // unusable password
             )
-            userService.registerOAuth2User(registerRequest)
+             tokenCookieResponse = userService.register(registerRequest)
+        } else {
+            val token = jwtTokenProvider.generateToken(dbUser)
+            val refreshToken = jwtTokenProvider.generateRefreshToken(dbUser)
+            tokenCookieResponse = TokenCookieResponse(
+                tokenCookie = userService.generateTokenCookie(token),
+                refreshTokenCookie = userService.generateRefreshTokenCookie(refreshToken)
+            )
         }
-
-        logger.debug("Token: $token")
-        response.addCookie(userService.generateTokenCookie(token))
+        response.addCookie(tokenCookieResponse.tokenCookie)
+        response.addCookie(tokenCookieResponse.refreshTokenCookie)
         response.sendRedirect("http://localhost:3000/")
     }
 }

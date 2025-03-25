@@ -10,18 +10,15 @@ export const UserProvider = ({ children }) => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-
-        const token = sessionStorage.getItem("token");
-        if (token != null) {
-          const meResponse = await axios.get(`${BASE_URL}/users/profile`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          setUser(meResponse.data);
-        } else {
-          setUser(null);
-        }
-      } catch (error) {
+        console.log("Base URL:", BASE_URL);
+        const meResponse = await axios.get(`${BASE_URL}/users/profile`, {
+          withCredentials: true
+        });
+        setUser(meResponse.data);
+      }
+      catch (error) {
         setUser(null);
+        console.error("Error fetching user data:", error);
       }
     };
     fetchUser();

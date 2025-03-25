@@ -22,6 +22,7 @@ class JwtRequestFilter(
     ) {
          try {
              var jwt: String? = null
+             var refreshToken: String? = null
              val authHeader = request.getHeader("Authorization")
              if (authHeader != null && authHeader.startsWith("Bearer ")) {
                  jwt = authHeader.substring(7)
@@ -31,16 +32,17 @@ class JwtRequestFilter(
                      for (cookie in cookies) {
                          if (cookie.name == "token") {
                              jwt = cookie.value
-                             break
+                         } else if (cookie.name == "refreshToken") {
+                             refreshToken = cookie.value
                          }
                      }
                  }
              }
-             if (jwt != null) {
+             if (jwt != null && refreshToken != null) {
                  val username = jwtTokenValidator.extractUsername(jwt)
                  if (username != null && SecurityContextHolder.getContext().authentication == null) {
                      val user = userService.findByUsername(username)
-                     if (user != null && jwtTokenValidator.validateToken(jwt, user)) {
+                     if (user != null && jwtTokenValidator.validateTokens(jwt, refreshToken, user)) {
                          val authToken = UsernamePasswordAuthenticationToken(user, null, emptyList())
                          authToken.details = WebAuthenticationDetailsSource().buildDetails(request)
                          SecurityContextHolder.getContext().authentication = authToken

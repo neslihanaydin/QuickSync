@@ -4,6 +4,7 @@ import Header from "./components/Header/Header.js";
 import Login from "./components/Auth/Login";
 import Register from "./components/Auth/Register";
 import ChatComponent from "./components/Chat/ChatComponent";
+import Test from "./components/Test/Test";
 import { UserContext, UserProvider } from "./context/UserContext";
 import { WebSocketProvider } from "./context/WebSocketContext";
 import "./App.css";
@@ -20,6 +21,7 @@ const AppContent = () => {
           <Route path="/register" element={<Register />} />
           <Route path="/chat" element={<ChatComponent />} />
           <Route path="/" element={<Login />} />
+          <Route path="/test" element={<Test />} />
         </Routes>
       </div>
     </Router>

@@ -30,3 +30,6 @@ spring:
           jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
 server:
   port: 8083
+jwt:
+  expiration: 3600000
+  refreshExpiration: 86400000

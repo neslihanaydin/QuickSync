@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.Authentication
 import org.springframework.security.oauth2.core.oidc.user.OidcUser
+import org.springframework.web.bind.annotation.CookieValue
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -23,40 +24,50 @@ class UserController(
     val logger = org.slf4j.LoggerFactory.getLogger(UserController::class.java)
     @PostMapping("/register")
     fun register(@RequestBody @Valid registerRequest: RegisterRequest, response: HttpServletResponse): ResponseEntity<Any> {
-        userService.register(registerRequest, response)
+        val tokenCookieResponse = userService.register(registerRequest)
+        addCookies(response, tokenCookieResponse)
         return ResponseEntity.status(HttpStatus.CREATED).build()
     }
 
     @PostMapping("/login")
     fun login(@RequestBody @Valid loginRequest: LoginRequest, response: HttpServletResponse): ResponseEntity<Any> {
-        userService.login(loginRequest, response)
+        val tokenCookieResponse = userService.login(loginRequest)
+        addCookies(response, tokenCookieResponse)
         return ResponseEntity.ok().build()
     }
 
+    @PostMapping("/refresh")
+    fun refreshToken(@CookieValue("refreshToken") refreshToken: String, response: HttpServletResponse): ResponseEntity<Any> {
+        val tokenCookieResponse = userService.refreshToken(refreshToken)
+        addCookies(response, tokenCookieResponse)
+        return ResponseEntity.ok().build()
+    }
+
+    private fun addCookies(response: HttpServletResponse, tokenCookieResponse: TokenCookieResponse) {
+        response.addCookie(tokenCookieResponse.tokenCookie)
+        response.addCookie(tokenCookieResponse.refreshTokenCookie)
+    }
+
     @PostMapping("/logout")
-    fun logout(response: HttpServletResponse): ResponseEntity<Any> {
-        val cookie = userService.logout()
-        response.addCookie(cookie)
+    fun logout(@CookieValue("token") token: String, @CookieValue("refreshToken") refreshToken: String, response: HttpServletResponse): ResponseEntity<Any> {
+        val tokenCookieResponse = userService.logout()
+        addCookies(response, tokenCookieResponse)
         return ResponseEntity.ok().build()
     }
 
     @GetMapping("/profile")
-    fun getProfile(authentication: Authentication): ResponseEntity<ProfileResponse> {
-        val principal = authentication.principal
-        logger.debug("Principal: $principal")
-        val profileResponse = when (principal) {
-            is User -> ProfileResponse(
-                username = principal.username,
-                email = principal.email
-            )
-            is OidcUser ->
-                ProfileResponse(
-                username = principal.getAttribute<String>("email").toString(),
-                email = principal.getAttribute<String>("email").toString()
-            )
-            else -> throw IllegalArgumentException("Invalid token.")
+    fun getProfile(@CookieValue("token", required = false) token: String?,
+                   @CookieValue("refreshToken", required = false) refreshToken: String?,
+                   response: HttpServletResponse): ResponseEntity<ProfileResponse> {
+        if (token.isNullOrBlank() || refreshToken.isNullOrBlank()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         }
-        logger.debug("Profile response: $profileResponse")
-        return ResponseEntity.ok(profileResponse)
+        val profileResponse = userService.getProfile(token, refreshToken)
+        var tokens = profileResponse.tokenCookieResponse
+        if (tokens != null) {
+            addCookies(response, tokens)
+        }
+
+        return ResponseEntity.ok(profileResponse.profile)
     }
 }
