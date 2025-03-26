@@ -22,22 +22,17 @@ const ChatComponent = () => {
 
   useEffect(() => {
     if (!user) return;
-    const token = sessionStorage.getItem('token');
 
+    // Retrieve chat partners (Messaging service)
     axios
-      .get(`${BASE_URL}/messages/chat-partners/${user.username}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      .get(`${BASE_URL}/messages/chat-partners/${user.username}`)
       .then((response) => {
         setPartners(response.data);
-
         if (response.data.length > 0) {
+          // Retrieve last messages for the partners (chat service, redis)
           const partnerList = response.data.join(',');
           axios
-            .get(
-              `${BASE_URL}/chat/warmup?username=${user.username}&partners=${partnerList}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            )
+            .get(`${BASE_URL}/chat/warmup?username=${user.username}&partners=${partnerList}`)
             .then((res) => setLastMessages(res.data))
             .catch((error) =>
               console.error('Error occurred during the warmup call:', error)
@@ -47,9 +42,7 @@ const ChatComponent = () => {
       .catch((error) => console.error('Failed to retrieve partners:', error));
 
     axios
-      .get(`${BASE_URL}/chat/last-messages?username=${user.username}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      .get(`${BASE_URL}/chat/last-messages?username=${user.username}`)
       .then((response) => setLastMessages(response.data))
       .catch((error) => console.error('Failed to retrieve last messages:', error));
     }, [user, BASE_URL]);
@@ -57,11 +50,8 @@ const ChatComponent = () => {
   useEffect(() => {
     if (location.state && location.state.selectedSender && user) {
       const selectedSender = location.state.selectedSender;
-      const token = sessionStorage.getItem('token');
       axios
-        .get(`${BASE_URL}/messages/chat/${user.username}/${selectedSender}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        .get(`${BASE_URL}/messages/chat/${user.username}/${selectedSender}`)
         .then((response) => {
           setSelectedPartner(selectedSender);
           setConversationMessages(response.data);
@@ -91,11 +81,8 @@ useEffect(() => {
 
 // Retrieve chat history with the selected partner
 const fetchConversation = (partner) => {
-    const token = sessionStorage.getItem('token');
     axios
-      .get(`${BASE_URL}/messages/chat/${user.username}/${partner}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      .get(`${BASE_URL}/messages/chat/${user.username}/${partner}`)
       .then((response) => {
         setSelectedPartner(partner);
         setConversationMessages(response.data);
@@ -113,7 +100,6 @@ const fetchConversation = (partner) => {
   // Send a new message
   const sendMessage = () => {
     if (!selectedPartner || newMessage.trim() === '') return;
-    const token = sessionStorage.getItem('token');
 
     axios
       .post(
@@ -122,8 +108,7 @@ const fetchConversation = (partner) => {
           sender: user.username,
           receiver: selectedPartner,
           text: newMessage,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
+        }
       )
       .then((response) => {
         const sentMsg = response.data;

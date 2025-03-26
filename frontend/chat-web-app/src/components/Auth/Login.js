@@ -19,7 +19,7 @@ const Login = () => {
      })
      .then((meResponse) => {
        setUser(meResponse.data);
-       navigate('/test');
+       navigate('/chat');
      })
      .catch(() => {
        console.log('Not logged in');
@@ -42,7 +42,7 @@ const Login = () => {
       });
       setUser(meResponse.data);
 
-      navigate('/test');
+      navigate('/chat');
     } catch (error) {
       alert('Login failed!');
     }
