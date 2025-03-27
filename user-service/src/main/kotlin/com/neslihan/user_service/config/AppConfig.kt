@@ -11,7 +11,7 @@ import javax.crypto.SecretKey
 
 @Configuration
 class AppConfig(
-    @Value("\${jwt.secret:SOMESECRETKEYSHOULDBEHERETHISISFORTESTPURPOSES123}") private val jwtSecret: String
+    @Value("\${jwt.secret}") val jwtSecret: String
 ) {
 
     @Bean

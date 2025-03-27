@@ -4,7 +4,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/usersdb
     username: admin_users
-    password: ${DB_PASSWORD}          # Jenkins credentials
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -16,8 +16,8 @@ spring:
       client:
         registration:
           google:
-            client-id: ${GOOGLE_CLIENT_ID}         # Jenkins credentials
-            client-secret: ${GOOGLE_CLIENT_SECRET}   # Jenkins credentials
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
             scope: profile,email
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
         provider:
@@ -32,7 +32,7 @@ spring:
     host: localhost
     port: 5672
     username: rabbitmq
-    password: ${RABBITMQ_PASSWORD}    # Jenkins credentials
+    password: ${RABBITMQ_PASSWORD}
     listener:
       simple:
         concurrency: 3
@@ -40,6 +40,6 @@ spring:
 server:
   port: ${PORT:8083}
 jwt:
-  secret: ${JWT_SECRET}             # Jenkins credentials
+  secret: ${JWT_SECRET:defaultSecretKeyShouldBeHereForTestPurposes123}
   expiration: 3600000
   refreshExpiration: 86400000
