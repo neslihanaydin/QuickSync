@@ -20,14 +20,6 @@ pipeline {
             }
         }
 
-        stage('Build & Test') {
-            steps {
-                dir('user-service') {
-                    sh 'mvn clean package'
-                }
-            }
-        }
-
         stage('Prepare Configurations') {
             steps {
                 dir('user-service') {
@@ -51,6 +43,14 @@ pipeline {
             steps {
                 script {
                     sh 'cat user-service/src/main/resources/application_final.yml'
+                }
+            }
+        }
+
+        stage('Build & Test') {
+            steps {
+                dir('user-service') {
+                    sh 'mvn clean package'
                 }
             }
         }

@@ -40,6 +40,6 @@ spring:
 server:
   port: ${PORT:8083}
 jwt:
-  secret: SecretKeyShouldBeHereForTestPurposes123
+  secret: ${JWT_SECRET}
   expiration: 3600000
   refreshExpiration: 86400000
