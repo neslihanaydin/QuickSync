@@ -17,24 +17,11 @@ pipeline {
             }
         }
 
-        stage('Build') {
-            steps {
-                dir('chat-service') {
-                    script {
-                        sh '''
-                            go mod tidy
-                            go build -o go-service ./cmd
-                        '''
-                    }
-                }
-            }
-        }
-
         stage('Build Docker Image & Push to Docker Hub') {
             steps {
                 script {
                     sh '''
-                        docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} ./chat-service
+                        docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} -f chat-service/Dockerfile chat-service
                         docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest
                         echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
                         docker push ${IMAGE_NAME}:${BUILD_NUMBER}
