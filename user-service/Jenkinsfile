@@ -36,9 +36,9 @@ pipeline {
                             export GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
                             export RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
                             export JWT_SECRET=${JWT_SECRET}
-                            ls -a
-                            envsubst < application.yml > application_final.yml
-                        '''
+                            ls -a src/main/resources
+                            envsubst < src/main/resources/application.yml > src/main/resources/application_final.yml
+                            '''
                     }
                 }
             }
