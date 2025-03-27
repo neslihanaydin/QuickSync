@@ -8,7 +8,7 @@ pipeline {
         GOOGLE_CLIENT_SECRET = credentials('user-service-google-client-secret')
         RABBITMQ_PASSWORD    = credentials('user-service-rabbitmq-password')
         DOCKER_REGISTRY = "docker.io/naydin43"
-        IMAGE_NAME = "${DOCKER_REGISTRY}/QS-user-service"
+        IMAGE_NAME = "${DOCKER_REGISTRY}/qs-user-service"
     }
 
     stages {
