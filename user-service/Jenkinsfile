@@ -9,6 +9,8 @@ pipeline {
         RABBITMQ_PASSWORD    = credentials('user-service-rabbitmq-password')
         DOCKER_REGISTRY = "docker.io/naydin43"
         IMAGE_NAME = "${DOCKER_REGISTRY}/qs-user-service"
+        DOCKER_PASSWORD = credentials('docker-hub-password')
+        DOCKER_USERNAME = credentials('docker-hub-username')
     }
 
     stages {
@@ -48,15 +50,13 @@ pipeline {
         stage('Build Docker Image & Push to Docker Hub') {
             steps {
                 script {
-
-                    sh 'docker context use desktop-linux || true'
-
-
-                    def image = docker.build("${IMAGE_NAME}:${env.BUILD_NUMBER}", "./user-service")
-                    docker.withRegistry('', 'docker-cred') {
-                        image.push('latest')
-                        image.push("${env.BUILD_NUMBER}")
-                    }
+                    sh '''
+                        docker build -t ${IMAGE_NAME}:${env.BUILD_NUMBER} ./user-service
+                        docker tag ${IMAGE_NAME}:${env.BUILD_NUMBER} ${IMAGE_NAME}:latest
+                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+                        docker push ${IMAGE_NAME}:${env.BUILD_NUMBER}
+                        docker push ${IMAGE_NAME}:latest
+                    '''
                 }
             }
         }
