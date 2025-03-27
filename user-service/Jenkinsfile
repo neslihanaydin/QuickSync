@@ -47,6 +47,15 @@ pipeline {
         }
 
 
+        stage('Check application.yml') {
+            steps {
+                script {
+                    sh 'cat user-service/src/main/resources/application_final.yml'
+                }
+            }
+        }
+
+
         stage('Build Docker Image & Push to Docker Hub') {
             steps {
                 script {
@@ -57,6 +66,14 @@ pipeline {
                         docker push ${IMAGE_NAME}:${BUILD_NUMBER}
                         docker push ${IMAGE_NAME}:latest
                     '''
+                }
+            }
+        }
+
+        stage('Test the container') {
+            steps {
+                script {
+                    sh "docker run -d -e JWT_SECRET=${JWT_SECRET} ${IMAGE_NAME}:latest"
                 }
             }
         }
