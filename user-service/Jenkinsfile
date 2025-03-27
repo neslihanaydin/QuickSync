@@ -44,16 +44,15 @@ pipeline {
             }
         }
 
-        stage('Set Docker Context') {
+        stage('Check Docker Access') {
             steps {
                 script {
-                    sh '''
-                    docker context ls
-                    docker context use desktop-linux
-                    '''
+                    sh 'whoami'
+                    sh 'docker info'
                 }
             }
         }
+
 
 
         stage('Build Docker Image & Push to Docker Hub') {
