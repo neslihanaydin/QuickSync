@@ -44,6 +44,17 @@ pipeline {
             }
         }
 
+        stage('Set Docker Context') {
+            steps {
+                script {
+                    sh '''
+                    docker context ls
+                    docker context use desktop-linux
+                    '''
+                }
+            }
+        }
+
 
         stage('Build Docker Image & Push to Docker Hub') {
             steps {
