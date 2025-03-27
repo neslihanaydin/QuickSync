@@ -51,10 +51,10 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        docker build -t ${IMAGE_NAME}:${env.BUILD_NUMBER} ./user-service
-                        docker tag ${IMAGE_NAME}:${env.BUILD_NUMBER} ${IMAGE_NAME}:latest
+                        docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} ./user-service
+                        docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest
                         echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-                        docker push ${IMAGE_NAME}:${env.BUILD_NUMBER}
+                        docker push ${IMAGE_NAME}:${BUILD_NUMBER}
                         docker push ${IMAGE_NAME}:latest
                     '''
                 }
