@@ -12,7 +12,7 @@ import javax.crypto.SecretKey
 @Configuration
 class AppConfig {
 
-    private val dotenv: Dotenv = Dotenv.load()
+    private val dotenv: Dotenv = Dotenv.configure().directory("user-service").load()
 
     @Bean
     fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
