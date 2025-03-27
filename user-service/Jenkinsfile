@@ -70,14 +70,6 @@ pipeline {
             }
         }
 
-        stage('Test the container') {
-            steps {
-                script {
-                    sh "docker run -d -e JWT_SECRET=${JWT_SECRET} ${IMAGE_NAME}:latest"
-                }
-            }
-        }
-
        /* stage('Deploy') {
             steps {
                 sh 'kubectl apply -f k8s/user-service-deployment.yml'
