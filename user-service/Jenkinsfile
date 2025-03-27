@@ -1,0 +1,74 @@
+pipeline {
+    agent any
+
+    environment {
+        JWT_SECRET           = credentials('user-service-jwt-secret')
+        DB_PASSWORD          = credentials('user-service-usersdb-password')
+        GOOGLE_CLIENT_ID     = credentials('user-service-google-client-id')
+        GOOGLE_CLIENT_SECRET = credentials('user-service-google-client-secret')
+        RABBITMQ_PASSWORD    = credentials('user-service-rabbitmq-password')
+        DOCKER_REGISTRY = "docker.io/naydin43"
+        IMAGE_NAME = "${DOCKER_REGISTRY}/QS-user-service"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build & Test') {
+            steps {
+                dir('user-service') {
+                    sh 'mvn clean package'
+                }
+            }
+        }
+
+        stage('Prepare Configurations') {
+            steps {
+                script {
+                    // Create .env file for JWT_SECRET
+                    writeFile file: 'user-service/.env', text: "JWT_SECRET=${env.JWT_SECRET}\n"
+
+                    sh '''
+                        export DB_PASSWORD=${DB_PASSWORD}
+                        export GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+                        export GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+                        export RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+                           envsubst < user-service/application.yml > user-service/application_final.yml
+                    '''
+                }
+            }
+        }
+
+        stage('Build Docker Image & Push to Docker Hub') {
+            steps {
+                script {
+                    def image = docker.build("${IMAGE_NAME}:${env.BUILD_NUMBER}", "./user-service")
+                    docker.withRegistry('', 'docker-cred') {
+                        image.push('latest')
+                        image.push("${env.BUILD_NUMBER}")
+                    }
+                }
+            }
+        }
+
+       /* stage('Deploy') {
+            steps {
+                sh 'kubectl apply -f k8s/user-service-deployment.yml'
+            }
+        }
+        */
+    }
+
+    post {
+        success {
+            echo 'User Service pipeline completed successfully!'
+        }
+        failure {
+            echo 'An error occurred in the User Service pipeline!'
+        }
+    }
+}
