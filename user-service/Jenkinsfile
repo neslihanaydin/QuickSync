@@ -44,20 +44,14 @@ pipeline {
             }
         }
 
-        stage('Check Docker Access') {
-            steps {
-                script {
-                    sh 'whoami'
-                    sh 'docker info'
-                }
-            }
-        }
-
-
 
         stage('Build Docker Image & Push to Docker Hub') {
             steps {
                 script {
+
+                    sh 'docker context use desktop-linux || true'
+
+
                     def image = docker.build("${IMAGE_NAME}:${env.BUILD_NUMBER}", "./user-service")
                     docker.withRegistry('', 'docker-cred') {
                         image.push('latest')
