@@ -25,16 +25,14 @@ pipeline {
 
         stage('Build Docker Image & Push to Docker Hub') {
             steps {
-                dir('messaging-service') {
-                    script {
-                        sh '''
-                            docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} ./messaging-service
-                            docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest
-                            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-                            docker push ${IMAGE_NAME}:${BUILD_NUMBER}
-                            docker push ${IMAGE_NAME}:latest
-                        '''
-                    }
+                script {
+                    sh '''
+                        docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} ./messaging-service
+                        docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest
+                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+                        docker push ${IMAGE_NAME}:${BUILD_NUMBER}
+                        docker push ${IMAGE_NAME}:latest
+                    '''
                 }
             }
         }
