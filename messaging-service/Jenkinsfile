@@ -1,0 +1,48 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_REGISTRY = "docker.io/naydin43"
+        IMAGE_NAME = "${DOCKER_REGISTRY}/qs-messaging-service"
+        DOCKER_PASSWORD = credentials('docker-hub-password')
+        DOCKER_USERNAME = credentials('docker-hub-username')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build & Test') {
+            steps {
+                dir('messaging-service') {
+                    sh 'mvn clean package'
+                }
+            }
+        }
+
+        stage('Build Docker Image & Push to Docker Hub') {
+            steps {
+                script {
+                    sh '''
+                        docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} ./messaging-service
+                        docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest
+                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+                        docker push ${IMAGE_NAME}:${BUILD_NUMBER}
+                        docker push ${IMAGE_NAME}:latest
+                    '''
+                }
+            }
+        }
+    }
+    post {
+        success {
+            echo 'User Service pipeline completed successfully!'
+        }
+        failure {
+            echo 'An error occurred in the User Service pipeline!'
+        }
+    }
+}
