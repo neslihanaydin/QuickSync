@@ -1,0 +1,43 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_REGISTRY = "docker.io/naydin43"
+        IMAGE_NAME = "${DOCKER_REGISTRY}/qs-chat-service"
+        DOCKER_PASSWORD = credentials('docker-hub-password')
+        DOCKER_USERNAME = credentials('docker-hub-username')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                script {
+                    checkout scm
+                }
+            }
+        }
+
+        stage('Build Docker Image & Push to Docker Hub') {
+            steps {
+                script {
+                    sh '''
+                        docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} -f chat-service/Dockerfile chat-service
+                        docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest
+                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+                        docker push ${IMAGE_NAME}:${BUILD_NUMBER}
+                        docker push ${IMAGE_NAME}:latest
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Chat Service pipeline completed successfully!"
+        }
+        failure {
+            echo "An error occurred during the Chat Service pipeline!"
+        }
+    }
+}
