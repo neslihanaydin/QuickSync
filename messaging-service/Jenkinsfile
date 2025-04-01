@@ -39,10 +39,10 @@ pipeline {
     }
     post {
         success {
-            echo 'User Service pipeline completed successfully!'
+            echo 'Messaging Service pipeline completed successfully!'
         }
         failure {
-            echo 'An error occurred in the User Service pipeline!'
+            echo 'An error occurred in the Messaging Service pipeline!'
         }
     }
 }
