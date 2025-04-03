@@ -35,7 +35,3 @@ spring:
             allowCredentials: true
 server:
   port: 8080
-management:
-  metrics:
-    enable:
-      all: false
